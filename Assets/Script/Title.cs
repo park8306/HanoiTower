@@ -17,11 +17,15 @@ public class Title : MonoBehaviour
     [SerializeField] private Transform m_titleHanoi;
     [SerializeField] private Transform m_startBtn;
 
-    void Start()
+    private void OnEnable()
     {
         InitTitle();
 
         AnimDisk();
+    }
+    private void Start()
+    {
+        m_startBtn.GetComponent<MouseOver>().m_buttonEvent = () => { GameManager.Instance.ShowScene(GameManager.GameScene.InGame); };
     }
 
     private void InitTitle()

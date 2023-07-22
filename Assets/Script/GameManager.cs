@@ -21,7 +21,7 @@ public class GameManager : Singleton<GameManager>
 
     void Start()
     {
-        
+        ShowScene(GameScene.Title);
     }
 
     private void Update()

@@ -9,13 +9,21 @@ public class MouseOver : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
 {
     [SerializeField] private GameObject m_gameObject;
 
-    public bool m_isMoveOk = true;
+    public delegate void ButtonEvent();
 
-    float DEF_SCALE_VALUE = 1.1f;
+    public ButtonEvent m_buttonEvent;
+
+    Vector3 DEF_SCALE_VALUE;
     float DEF_DURATION = 0.3f;
+
+    Tween m_btnTween;
 
     private void Start()
     {
+        if (m_gameObject == null) m_gameObject = this.gameObject;
+
+        DEF_SCALE_VALUE = m_gameObject.transform.localScale;
+
         InitBtn();
     }
 
@@ -33,7 +41,7 @@ public class MouseOver : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
             {
                 m_gameObject.transform.DOPunchScale(Vector3.one * 0.1f, DEF_DURATION, 5).OnComplete(() =>
                 {
-                    GameManager.Instance.ShowScene(GameManager.GameScene.InGame);
+                    if (m_buttonEvent != null) m_buttonEvent();
                 });
             });
         });
@@ -42,12 +50,12 @@ public class MouseOver : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
     public void OnPointerEnter(PointerEventData eventData)
     {
         SoundManager.Instance.PlaySfxSound(SoundManager.SFX.activeBtn);
-        m_gameObject.transform.DOScale(new Vector3(DEF_SCALE_VALUE, DEF_SCALE_VALUE, DEF_SCALE_VALUE), DEF_DURATION).SetLoops(-1,LoopType.Yoyo);
+        m_gameObject.transform.DOScale(m_gameObject.transform.localScale + new Vector3(0.1f, 0.1f, 0.1f), DEF_DURATION).SetLoops(-1,LoopType.Yoyo);
     }
 
     public void OnPointerExit(PointerEventData eventData)
     {
         m_gameObject.transform.DOKill();
-        m_gameObject.transform.DOScale(Vector3.one, DEF_DURATION);
+        m_gameObject.transform.DOScale(DEF_SCALE_VALUE, DEF_DURATION);
     }
 }
