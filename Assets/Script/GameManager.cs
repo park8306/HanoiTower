@@ -10,6 +10,16 @@ public class GameManager : Singleton<GameManager>
         InGame,
     }
 
+    public enum InGameState
+    {
+        None,
+        Play,
+        ChooseLevel,
+        End
+    }
+
+    public InGameState m_inGameState = InGameState.None;
+
     [SerializeField] private GameObject[] m_arrBg;
     [SerializeField] private GameObject[] m_arrScene;
 

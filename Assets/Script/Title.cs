@@ -26,6 +26,8 @@ public class Title : MonoBehaviour
     private void Start()
     {
         m_startBtn.GetComponent<MouseOver>().m_buttonEvent = () => { GameManager.Instance.ShowScene(GameManager.GameScene.InGame); };
+
+        m_startBtn.GetComponent<MouseOver>().InitBtn();
     }
 
     private void InitTitle()
@@ -47,7 +49,7 @@ public class Title : MonoBehaviour
 
     private void AnimDisk()
     {
-        float fDiskDistance = 67;
+        float fDiskDistance = 70;
         float fAnimDuration = 1.5f;
         float fAnimDelay = 0.1f;
 

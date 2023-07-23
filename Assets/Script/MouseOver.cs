@@ -18,16 +18,16 @@ public class MouseOver : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
 
     Tween m_btnTween;
 
-    private void Start()
+    private void Awake()
     {
         if (m_gameObject == null) m_gameObject = this.gameObject;
 
         DEF_SCALE_VALUE = m_gameObject.transform.localScale;
 
-        InitBtn();
+        if (DEF_SCALE_VALUE.x == 0) DEF_SCALE_VALUE = Vector3.one;
     }
 
-    private void InitBtn()
+    public void InitBtn()
     {
         m_gameObject.GetComponent<Button>().onClick.AddListener(() =>
         {
