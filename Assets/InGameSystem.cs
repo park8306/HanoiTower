@@ -28,6 +28,10 @@ public class InGameSystem : MonoBehaviour
     [SerializeField] private InGameBar[] m_arrInGameBar;
     [SerializeField] private GameObject[] m_arrInGameDisk;
 
+    [Header("------------- UI -------------")]
+    [SerializeField] private Text m_txtTimer;
+    [SerializeField] private Text m_txtMoveCnt;
+
     private List<Sprite> m_liTowerSprite = new List<Sprite>();
 
     public static InGameBar SelectedInGameBar = null;
@@ -96,6 +100,8 @@ public class InGameSystem : MonoBehaviour
         {
             if (_inGameBar.transform.childCount != 0)
             {
+                if (_inGameBar.transform.GetChild(0).gameObject.activeInHierarchy == false) return;
+
                 SelectedInGameBar = _inGameBar;
 
                 GameObject diskDot = SelectedInGameBar.transform.GetChild(0).GetChild(0).gameObject;
@@ -114,15 +120,18 @@ public class InGameSystem : MonoBehaviour
     }
     private void MoveDisk(InGameBar _inGameBar)
     {
-        SoundManager.Instance.PlaySfxSound(Random.Range(0, 2) == 0 ? SoundManager.SFX.move1 : SoundManager.SFX.move2);
-
         Transform disk = SelectedInGameBar.transform.GetChild(0);
         GameObject diskDot = disk.GetChild(0).gameObject;
+
+        SoundManager.Instance.PlaySfxSound(Random.Range(0, 2) == 0 ? SoundManager.SFX.move1 : SoundManager.SFX.move2);
 
         diskDot.SetActive(false);
         disk.parent = _inGameBar.transform;
         disk.SetAsFirstSibling();
         SelectedInGameBar = null;
+
+        m_inGameMoveCnt++;
+        SetMoveCnt(m_inGameMoveCnt);
     }
 
     private void SetModeBtn()
@@ -164,7 +173,17 @@ public class InGameSystem : MonoBehaviour
             // 배경 변경
             ChangeInGameTower(nDiskCnt);
 
-            DOTween.To(() => CGinGame.alpha, x => CGinGame.alpha = x, 1f, 0.5f).OnComplete(()=> { GameManager.Instance.m_inGameState = GameManager.InGameState.Play; });
+            // 시간 초기화
+            InitTimer();
+
+            // 횟수 초기화
+            InitMoveCnt();
+
+            DOTween.To(() => CGinGame.alpha, x => CGinGame.alpha = x, 1f, 0.5f).OnComplete(()=> 
+            { 
+                GameManager.Instance.m_inGameState = GameManager.InGameState.Play;
+                PlayTimer();
+            });
         });
     }
 
@@ -273,5 +292,53 @@ public class InGameSystem : MonoBehaviour
     private void ActiveTouchBlock(bool _isActive)
     {
         m_touchBlock.SetActive(_isActive);
+    }
+
+    private int m_inGameMoveCnt = 0;
+    private Coroutine m_timerCo;
+
+    // ui 제어
+    private void InitTimer()
+    {
+        if (m_timerCo != null) StopCoroutine(m_timerCo);
+        m_timerCo = null;
+        m_txtTimer.text = "00:00:00";
+    }
+    private void PlayTimer()
+    {
+        m_timerCo = StartCoroutine(TimerCo());
+    }
+
+    private IEnumerator TimerCo()
+    {
+        yield return new WaitUntil(()=>{ return GameManager.Instance.m_inGameState == GameManager.InGameState.Play; });
+        int s = 0;
+
+        while (true)
+        {
+            Debug.Log("hi");
+            yield return new WaitForSeconds(1f);
+            s++;
+            m_txtTimer.text = FormatTime(s);
+        }
+    }
+
+    private string FormatTime(int _s)
+    {
+        int m = _s / 60;
+        int h = m / 60;
+
+        return $"{(h < 10 ? "0" + h.ToString() : h.ToString())}:{(m < 10 ? "0" + m.ToString() : m.ToString())}:{(_s < 10 ? "0" + _s.ToString():_s.ToString())}";
+    }
+
+    void InitMoveCnt()
+    {
+        m_inGameMoveCnt = 0;
+        m_txtMoveCnt.text = "횟수:0";
+    }
+
+    private void SetMoveCnt(int _inGameMoveCnt)
+    {
+        m_txtMoveCnt.text = "횟수:" + _inGameMoveCnt.ToString();
     }
 }
