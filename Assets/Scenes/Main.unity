@@ -5974,6 +5974,7 @@ MonoBehaviour:
   m_touchBlock: {fileID: 294659935}
   m_btnReStart: {fileID: 256297984}
   m_inGame: {fileID: 1979347045}
+  m_inGameTower: {fileID: 1044846269}
   m_arrInGameBar:
   - {fileID: 1772795169}
   - {fileID: 555260886}
@@ -5988,6 +5989,8 @@ MonoBehaviour:
   - {fileID: 326333461}
   - {fileID: 1259821492}
   - {fileID: 1180814186}
+  m_txtTimer: {fileID: 1366111839}
+  m_txtMoveCnt: {fileID: 1637672505}
 --- !u!1 &1979347045
 GameObject:
   m_ObjectHideFlags: 0
