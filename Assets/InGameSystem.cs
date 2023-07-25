@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using DG.Tweening;
 using Random = UnityEngine.Random;
+using System.Linq;
 
 public class InGameSystem : MonoBehaviour
 {
@@ -22,12 +23,19 @@ public class InGameSystem : MonoBehaviour
     [SerializeField] private Button m_btnReStart;
 
     [Header("------------- 인게임 -------------")]
+    [SerializeField] private GameObject m_inGame;
+    [SerializeField] private Image m_inGameTower;
     [SerializeField] private InGameBar[] m_arrInGameBar;
     [SerializeField] private GameObject[] m_arrInGameDisk;
+
+    private List<Sprite> m_liTowerSprite = new List<Sprite>();
+
     public static InGameBar SelectedInGameBar = null;
 
     private void Start()
     {
+        LoadTowerSprite();
+
         m_btnCheck.onClick.AddListener(() => { SetBtnCheck(); });
 
         m_btnReStart.onClick.AddListener(()=> { ActiveChooseLevelObj(true, true); });
@@ -43,12 +51,34 @@ public class InGameSystem : MonoBehaviour
         m_btnCheck.GetComponent<MouseOver>().InitBtn();
     }
 
+    private void LoadTowerSprite()
+    {
+        Sprite[] towerSprite0 = Resources.LoadAll<Sprite>("img/InGame/InGame-0");
+        Sprite[] towerSprite1 = Resources.LoadAll<Sprite>("img/InGame/InGame-1");
+
+        m_liTowerSprite.Add(towerSprite0[11]);
+        m_liTowerSprite.Add(towerSprite1[1]);
+        m_liTowerSprite.Add(towerSprite0[12]);
+    }
+
     private void InitDisk()
     {
+        List<Transform> inGameBarDisk = new List<Transform>();
+
         for (int i = 0; i < m_arrInGameDisk.Length; i++)
         {
+            // 1번 막대로 전부 위치 옮김
+            Transform inGameDisk = m_arrInGameDisk[i].transform;
+            inGameDisk.transform.parent = m_arrInGameBar[0].transform;
+
+            inGameBarDisk.Add(inGameDisk);
+
+            // 디스크 강조 점선 비활성화
             m_arrInGameDisk[i].transform.GetChild(0).gameObject.SetActive(false);
         }
+
+        // 디스크 정렬시켜주기
+        inGameBarDisk.ForEach(x => x.SetSiblingIndex((x.name[x.name.Length - 1] - '0') - 1));
     }
 
     private void Update()
@@ -110,21 +140,58 @@ public class InGameSystem : MonoBehaviour
     {
         _btnMode.GetComponent<MouseOver>().m_buttonEvent = () =>
         {
-            Debug.Log(_btnMode.name + "버튼 클릭");
-            ActiveTouchBlock(false);
             ActiveChooseLevelObj(false, true, () =>
             {
                 SetInGame(_btnMode.name);
             });
         };
         _btnMode.GetComponent<MouseOver>().InitBtn();
-
-        GameManager.Instance.m_inGameState = GameManager.InGameState.Play;
     }
 
+    // 인게임 세팅
     private void SetInGame(string _btnName)
     {
-        throw new NotImplementedException();
+        CanvasGroup CGinGame = m_inGame.GetComponent<CanvasGroup>();
+        int nDiskCnt = _btnName[_btnName.Length - 1] - '0';
+
+        DOTween.To(() => CGinGame.alpha, x => CGinGame.alpha = x, 0f, 0.5f).OnComplete(()=> 
+        {
+            InitDisk();
+
+            // 모두 비활성화 후 필요한 갯수만큼 활성화 시켜주기
+            ActiveDisk(nDiskCnt);
+
+            // 배경 변경
+            ChangeInGameTower(nDiskCnt);
+
+            DOTween.To(() => CGinGame.alpha, x => CGinGame.alpha = x, 1f, 0.5f).OnComplete(()=> { GameManager.Instance.m_inGameState = GameManager.InGameState.Play; });
+        });
+    }
+
+    private void ChangeInGameTower(int nDiskCnt)
+    {
+        if (nDiskCnt <= 3)
+        {
+            m_inGameTower.sprite = m_liTowerSprite[0];
+        }
+        else if(nDiskCnt <= 6)
+        {
+            m_inGameTower.sprite = m_liTowerSprite[1];
+        }
+        else if(nDiskCnt <= 9)
+        {
+            m_inGameTower.sprite = m_liTowerSprite[2];
+        }
+        m_inGameTower.SetNativeSize();
+    }
+
+    private void ActiveDisk(int nDiskCnt)
+    {
+        Array.ForEach(m_arrInGameDisk, x => x.SetActive(false));
+        for (int i = 0; i < nDiskCnt; i++)
+        {
+            m_arrInGameDisk[i].SetActive(true);
+        }
     }
 
     private void SetBtnCheck()
@@ -190,6 +257,8 @@ public class InGameSystem : MonoBehaviour
             m_chooseLevel.SetActive(_isActive);
             ActiveBtnMode(_isActive);
         }
+
+        ActiveTouchBlock(_isActive);
     }
 
     private void ActiveBtnMode(bool _isActive)
