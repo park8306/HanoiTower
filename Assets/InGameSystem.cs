@@ -28,9 +28,17 @@ public class InGameSystem : MonoBehaviour
     [SerializeField] private InGameBar[] m_arrInGameBar;
     [SerializeField] private GameObject[] m_arrInGameDisk;
 
+    private int m_nChooseLv = 0;
+
     [Header("------------- UI -------------")]
     [SerializeField] private Text m_txtTimer;
     [SerializeField] private Text m_txtMoveCnt;
+
+    [Header("------------- Result -------------")]
+    [SerializeField] private GameObject m_result;
+    [SerializeField] private Transform m_resultBG;
+    [SerializeField] private Image m_dim;
+    [SerializeField] private GameObject m_resultInfo;
 
     private List<Sprite> m_liTowerSprite = new List<Sprite>();
 
@@ -38,6 +46,8 @@ public class InGameSystem : MonoBehaviour
 
     private void Start()
     {
+        m_result.SetActive(false);
+
         LoadTowerSprite();
 
         m_btnCheck.onClick.AddListener(() => { SetBtnCheck(); });
@@ -67,6 +77,8 @@ public class InGameSystem : MonoBehaviour
 
     private void InitDisk()
     {
+        SelectedInGameBar = null;
+
         List<Transform> inGameBarDisk = new List<Transform>();
 
         for (int i = 0; i < m_arrInGameDisk.Length; i++)
@@ -132,6 +144,44 @@ public class InGameSystem : MonoBehaviour
 
         m_inGameMoveCnt++;
         SetMoveCnt(m_inGameMoveCnt);
+        CheckInGameEnd();
+    }
+
+    private void CheckInGameEnd()
+    {
+        if (m_arrInGameBar[2].transform.childCount != m_nChooseLv) return;
+
+        int nTopDisk = 0;
+
+        for (int i = 0; i < m_arrInGameBar[2].transform.childCount; i++)
+        {
+            Transform disk = m_arrInGameBar[2].transform.GetChild(i);
+            int nDisk = disk.name[disk.name.Length - 1] - '0';
+            if (nTopDisk < nDisk) nTopDisk = nDisk;
+            else return;
+        }
+
+        Debug.Log("게임 클리어");
+        StartResultTween();
+    }
+
+    private void StartResultTween()
+    {
+        InitResult();
+
+        m_resultBG.localPosition = new Vector3(-1920f, 0f, 0f);
+        m_resultBG.DOMoveX(960f, 0.5f);
+        m_dim.DOColor(new Color(0f, 0f, 0f, 0.85f), 0.5f).OnComplete(() =>
+        {
+            m_resultInfo.transform.DOScale(Vector3.one, 0.5f).SetEase(Ease.OutBack);
+        });
+    }
+
+    private void InitResult()
+    {
+        m_result.SetActive(true);
+        m_dim.color = Color.clear;
+        m_resultInfo.transform.localScale = Vector3.zero;
     }
 
     private void SetModeBtn()
@@ -162,6 +212,8 @@ public class InGameSystem : MonoBehaviour
     {
         CanvasGroup CGinGame = m_inGame.GetComponent<CanvasGroup>();
         int nDiskCnt = _btnName[_btnName.Length - 1] - '0';
+
+        m_nChooseLv = nDiskCnt;
 
         DOTween.To(() => CGinGame.alpha, x => CGinGame.alpha = x, 0f, 0.5f).OnComplete(()=> 
         {
@@ -295,6 +347,7 @@ public class InGameSystem : MonoBehaviour
     }
 
     private int m_inGameMoveCnt = 0;
+    private float m_inGameTime = 0f;
     private Coroutine m_timerCo;
 
     // ui 제어
