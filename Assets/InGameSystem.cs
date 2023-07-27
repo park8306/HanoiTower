@@ -39,6 +39,16 @@ public class InGameSystem : MonoBehaviour
     [SerializeField] private Transform m_resultBG;
     [SerializeField] private Image m_dim;
     [SerializeField] private GameObject m_resultInfo;
+    [SerializeField] private Text m_resultLevel;
+    [SerializeField] private Text m_resultName;
+    [SerializeField] private Text m_resultMoveCnt;
+    [SerializeField] private Text m_resultTime;
+    [SerializeField] private Button m_btnResultRestart;
+
+    [Header("------------- Rank -------------")]
+    [SerializeField] private GameObject m_rank;
+    [SerializeField] private Button m_btnRank;
+    [SerializeField] private Button m_btnRankX;
 
     private List<Sprite> m_liTowerSprite = new List<Sprite>();
 
@@ -63,6 +73,21 @@ public class InGameSystem : MonoBehaviour
         ActiveChooseLevelObj(false);
 
         m_btnCheck.GetComponent<MouseOver>().InitBtn();
+
+        m_btnResultRestart.GetComponent<MouseOver>().m_buttonEvent = ()=>
+        {
+            ActiveChooseLevelObj(true, true);
+            ActiveResultInfoObj(false, true);
+        };
+        m_btnResultRestart.GetComponent<MouseOver>().InitBtn();
+
+        m_btnRank.GetComponent<MouseOver>().m_buttonEvent = () =>
+        {
+            ActiveRankObj(true, true);
+        };
+        m_btnRank.GetComponent<MouseOver>().InitBtn();
+
+        m_btnRankX.onClick.AddListener(()=> { ActiveRankObj(false, true); });
     }
 
     private void LoadTowerSprite()
@@ -123,7 +148,13 @@ public class InGameSystem : MonoBehaviour
         }
         else
         {
-            if (SelectedInGameBar == _inGameBar) return;
+            if (SelectedInGameBar == _inGameBar)
+            {
+                GameObject diskDot = SelectedInGameBar.transform.GetChild(0).GetChild(0).gameObject;
+                diskDot.SetActive(false);
+
+                SelectedInGameBar = null;
+            } 
             else
             {
                 MoveDisk(_inGameBar);
@@ -134,6 +165,18 @@ public class InGameSystem : MonoBehaviour
     {
         Transform disk = SelectedInGameBar.transform.GetChild(0);
         GameObject diskDot = disk.GetChild(0).gameObject;
+
+        if(_inGameBar.transform.childCount != 0)
+        {
+            int nInGamebar = _inGameBar.transform.GetChild(0).name[_inGameBar.transform.GetChild(0).name.Length - 1] - '0';
+            int nDisk = disk.transform.name[disk.transform.name.Length - 1] - '0';
+
+            if (nInGamebar < nDisk)
+            {
+                SoundManager.Instance.PlaySfxSound(SoundManager.SFX.cantMove);
+                return;
+            }
+        }
 
         SoundManager.Instance.PlaySfxSound(Random.Range(0, 2) == 0 ? SoundManager.SFX.move1 : SoundManager.SFX.move2);
 
@@ -169,6 +212,8 @@ public class InGameSystem : MonoBehaviour
     {
         InitResult();
 
+        SoundManager.Instance.PlaySfxSound(SoundManager.SFX.finishiResult);
+
         m_resultBG.localPosition = new Vector3(-1920f, 0f, 0f);
         m_resultBG.DOMoveX(960f, 0.5f);
         m_dim.DOColor(new Color(0f, 0f, 0f, 0.85f), 0.5f).OnComplete(() =>
@@ -180,8 +225,23 @@ public class InGameSystem : MonoBehaviour
     private void InitResult()
     {
         m_result.SetActive(true);
+        m_result.GetComponent<CanvasGroup>().alpha = 1;
         m_dim.color = Color.clear;
         m_resultInfo.transform.localScale = Vector3.zero;
+
+        if (m_timerCo != null) StopCoroutine(m_timerCo);
+
+        m_resultLevel.text = $"-원판 {m_nChooseLv}개-";
+        m_resultName.text = $"{m_userName}님의 기록은";
+        m_resultMoveCnt.text = $"이동 횟수:{m_inGameMoveCnt}";
+        m_resultTime.text = $"소요 시간:{m_txtTimer.text}";
+
+        SetRankInfo();
+    }
+
+    private void SetRankInfo()
+    {
+        // 랭크 설정
     }
 
     private void SetModeBtn()
@@ -332,6 +392,73 @@ public class InGameSystem : MonoBehaviour
         ActiveTouchBlock(_isActive);
     }
 
+    private void ActiveResultInfoObj(bool _isActive, bool _isTween)
+    {
+        GameManager.Instance.m_inGameState = GameManager.InGameState.Clear;
+        if (_isTween)
+        {
+            CanvasGroup CGresult = m_result.GetComponent<CanvasGroup>();
+            ActiveBtnResult(false);
+
+            if (_isActive)
+            {
+                CGresult.alpha = 0;
+
+                m_result.SetActive(_isActive);
+
+                DOTween.To(() => CGresult.alpha, x => CGresult.alpha = x, 1, 0.5f).OnComplete(() => { ActiveBtnResult(true); });
+            }
+            else
+            {
+                CGresult.alpha = 1;
+
+                DOTween.To(() => CGresult.alpha, x => CGresult.alpha = x, 0, 0.5f).OnComplete(() =>
+                {
+                    m_result.SetActive(_isActive);
+                });
+            }
+        }
+        else
+        {
+            m_result.SetActive(_isActive);
+            ActiveBtnResult(_isActive);
+        }
+
+        ActiveTouchBlock(_isActive);
+    }
+
+    private void ActiveRankObj(bool _isActive, bool _isTween)
+    {
+        if (_isTween)
+        {
+            CanvasGroup CGrank = m_rank.GetComponent<CanvasGroup>();
+            ActiveBtnRank(false);
+
+            if (_isActive)
+            {
+                CGrank.alpha = 0;
+
+                m_rank.SetActive(_isActive);
+
+                DOTween.To(() => CGrank.alpha, x => CGrank.alpha = x, 1, 0.5f).OnComplete(() => { ActiveBtnRank(true); });
+            }
+            else
+            {
+                CGrank.alpha = 1;
+
+                DOTween.To(() => CGrank.alpha, x => CGrank.alpha = x, 0, 0.5f).OnComplete(() =>
+                {
+                    m_rank.SetActive(_isActive);
+                });
+            }
+        }
+        else
+        {
+            m_result.SetActive(_isActive);
+            ActiveBtnRank(_isActive);
+        }
+    }
+
     private void ActiveBtnMode(bool _isActive)
     {
         for (int i = 0; i < m_arrBtnMode.Length; i++)
@@ -339,6 +466,18 @@ public class InGameSystem : MonoBehaviour
             m_arrBtnMode[i].enabled = _isActive;
             m_arrBtnMode[i].GetComponent<MouseOver>().enabled = _isActive;
         }
+    }
+    private void ActiveBtnResult(bool _isActive)
+    {
+        m_btnResultRestart.enabled = _isActive;
+        m_btnResultRestart.GetComponent<MouseOver>().enabled = _isActive;
+
+        m_btnRank.enabled = _isActive;
+        m_btnRank.GetComponent<MouseOver>().enabled = _isActive;
+    }
+    private void ActiveBtnRank(bool _isActive)
+    {
+        m_btnRankX.enabled = _isActive;
     }
 
     private void ActiveTouchBlock(bool _isActive)
@@ -355,6 +494,7 @@ public class InGameSystem : MonoBehaviour
     {
         if (m_timerCo != null) StopCoroutine(m_timerCo);
         m_timerCo = null;
+        m_inGameTime = 0;
         m_txtTimer.text = "00:00:00";
     }
     private void PlayTimer()
@@ -371,6 +511,7 @@ public class InGameSystem : MonoBehaviour
         {
             Debug.Log("hi");
             yield return new WaitForSeconds(1f);
+            m_inGameTime++;
             s++;
             m_txtTimer.text = FormatTime(s);
         }
@@ -378,10 +519,11 @@ public class InGameSystem : MonoBehaviour
 
     private string FormatTime(int _s)
     {
+        int s = _s % 60;
         int m = _s / 60;
         int h = m / 60;
 
-        return $"{(h < 10 ? "0" + h.ToString() : h.ToString())}:{(m < 10 ? "0" + m.ToString() : m.ToString())}:{(_s < 10 ? "0" + _s.ToString():_s.ToString())}";
+        return $"{(h < 10 ? "0" + h.ToString() : h.ToString())}:{(m < 10 ? "0" + m.ToString() : m.ToString())}:{(s < 10 ? "0" + s.ToString(): s.ToString())}";
     }
 
     void InitMoveCnt()

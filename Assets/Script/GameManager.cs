@@ -15,7 +15,7 @@ public class GameManager : Singleton<GameManager>
         None,
         Play,
         ChooseLevel,
-        End
+        Clear
     }
 
     public InGameState m_inGameState = InGameState.None;
